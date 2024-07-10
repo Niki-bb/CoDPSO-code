@@ -39,15 +39,6 @@ N=N_Init*ones(MAX_SWARMS,1);          % 维度为[10,1],其中元素值均为N_Init-20
 SCmax = 30; 
 SC=zeros(MAX_SWARMS,1);               % (10,1)
 
-% xmax=[0.1 2.0 2000 2.0 2000 1.0 1.0 10 10 10 10 10];
-% xmin=[0 0 0 0 0 0 0 -10 -10 -10 -10 -10];
-% vmax=[0.02 0.4 400 0.4 400 0.2 0.2 4 4 4 4 4];
-% vmin=[-0.02 -0.4 -400 -0.4 -400 -0.2 -0.2 -4 -4 -4 -4 -4];
-% X_MAX = xmax;
-% X_MIN = xmin;
-% V_MAX = vmax;
-% V_MIN = vmin;
-
 X_MAX=ub;
 X_MIN=lb;
 vmax = (X_MAX-X_MIN)/4;
@@ -86,9 +77,6 @@ for i=1:N_SWARMS        % i=1:5
     xaux{i}(1:N(i),1:N_PAR)=inicializaSwarm(N(i), N_PAR, X_MAX, X_MIN); %x ser? uma matriz com todos os valores de k  / inicializaSwarm译为初始化粒子群，不太懂这一步含义是啥？
     x=xaux;
     for j=1:N(i)
-%         fit{i}(j)=0;
-%         [pUt]=Lisimlation1(x{i}(j,1),x{i}(j,2),x{i}(j,3),x{i}(j,4),x{i}(j,5),x{i}(j,6),x{i}(j,7),x{i}(j,8),x{i}(j,9),x{i}(j,10),x{i}(j,11),x{i}(j,12));
-%         fit{i}(j)=sum((pUt-Ut).^2);
         fit{i}(j)=feval(fhd,(x{i}(j,:))',varargin{:})-fbias(varargin{:});
         fitBest{i}(j)=fit{i}(j);      %INICIALIZAR FITBEST  fitBest储存每个群体中每个粒子的适应度值
     end
@@ -124,7 +112,6 @@ while (nger<=N_GER)
                       + (1/24)*(aerfa^4+4*beita^4-4*aerfa^3-6*aerfa^2*beita^2+11*(aerfa^2-beita^2)+18*aerfa*beita^2-6*aerfa)*vbef3{i}(1:N(i),:))...
                       + randnum1.*(PHI1.*(xBest{i}(1:N(i),:)-x{i}(1:N(i),:)))...
                       + randnum2.*(PHI2.*(gaux*gBest{i}-x{i}(1:N(i),:)));
-            %         + (1/24)*aerfa*(1-aerfa)*(2-aerfa)*(3-aerfa)*vbef3{i}(1:N(i),:))...
             % 速度限制
             for j=1:N_PAR
                 for q=1:N(i)
@@ -151,11 +138,7 @@ while (nger<=N_GER)
             end
             
             for j=1:N(i)
-%                 fitaux{i}(j)=0;
-%                 [pUt1]=Lisimlation1(xaux{i}(j,1),xaux{i}(j,2),xaux{i}(j,3),xaux{i}(j,4),xaux{i}(j,5),xaux{i}(j,6),xaux{i}(j,7),xaux{i}(j,8),xaux{i}(j,9),xaux{i}(j,10),xaux{i}(j,11),xaux{i}(j,12));
-%                 fitaux{i}(j)=sum((pUt1-Ut).^2);
                 fitaux{i}(j)=feval(fhd,(xaux{i}(j,:))',varargin{:})-fbias(varargin{:});
-                
                 if fitaux{i}(j) < fitBestaux{i}(j)     % fitBestaux是存储的每个群体中每个粒子的适应度值，相当于初始化fitaux的值，fitaux是当前的。
                    fitBestaux{i}(j) = fitaux{i}(j);
                    xBestaux{i}(j,:) = xaux{i}(j,:);
@@ -172,48 +155,51 @@ while (nger<=N_GER)
             
             if (nger>1)
                 if gbestvalueaux(i)>=gbestvalue(i)  %check performance of the swarm  这里应该是考虑最小值问题时，最大值问题这里应该是小于等于，后续程序进行自适应调整
-                    SC(i)=SC(i)+1;
-                    if (SC(i)==SCmax)        %reached search limit  SCmax
-                        if N(i)>N_MIN        %delete particle  N_MIN
-                           [a,b]=max(fitaux{i});    % 因为每次惩罚值删除一个粒子，所以这里只考虑一个b（因为可能存在多个粒子都具有最坏的适应度值，只是目标解的维度较大时这个可能比较小）
+%                     if gbestvalueaux(i)>2870      %
+%                     DE策略，2870为退化点，根据算法表现判断是否需要添加此策略
+                        SC(i)=SC(i)+1;
+                        if (SC(i)==SCmax)        %reached search limit  SCmax
+                            if N(i)>N_MIN        %delete particle  N_MIN
+                               [a,b]=max(fitaux{i});    % 因为每次惩罚值删除一个粒子，所以这里只考虑一个b（因为可能存在多个粒子都具有最坏的适应度值，只是目标解的维度较大时这个可能比较小）
 
-                            if b==1      % 当这个最大值在第一行时（假设是最小值问题）
-                                xaux{i}=xaux{i}(2:N(i),:);
-                                xBestaux{i}=xBestaux{i}(2:N(i),:);
-                                vaux{i}=vaux{i}(2:N(i),:);
-                                vbef1aux{i}=vbef1aux{i}(2:N(i),:);
-                                vbef2aux{i}=vbef2aux{i}(2:N(i),:);
-                                vbef3aux{i}=vbef3aux{i}(2:N(i),:);
-                            end
-                            if b==N(i)   % 当这个最大值在最后一行时
-                                xaux{i}=xaux{i}(1:b-1,:);
-                                xBestaux{i}=xBestaux{i}(1:b-1,:);
-                                vaux{i}=vaux{i}(1:b-1,:);
-                                vbef1aux{i}=vbef1aux{i}(1:b-1,:);
-                                vbef2aux{i}=vbef2aux{i}(1:b-1,:);
-                                vbef3aux{i}=vbef3aux{i}(1:b-1,:);
-                            end
-                            if (b>1 && b<N(i))
-                                xaux{i}=vertcat(xaux{i}(1:(b-1),:),xaux{i}((b+1):N(i),:));    % vercat表示垂直连接数组
-                                xBestaux{i}=vertcat(xBestaux{i}(1:(b-1),:),xBestaux{i}((b+1):N(i),:));
-                                vaux{i}=vertcat(vaux{i}(1:(b-1),:),vaux{i}((b+1):N(i),:));
-                                vbef1aux{i}=vertcat(vbef1aux{i}(1:(b-1),:),vbef1aux{i}((b+1):N(i),:));
-                                vbef2aux{i}=vertcat(vbef2aux{i}(1:(b-1),:),vbef2aux{i}((b+1):N(i),:));
-                                vbef3aux{i}=vertcat(vbef3aux{i}(1:(b-1),:),vbef3aux{i}((b+1):N(i),:));
-                            end
-                            N(i)=N(i)-1;
-                            Nkill(i)=Nkill(i)+1;
-                            SC(i)=fix(SCmax*(1-1/(Nkill(i)+1)));     % fix函数表示向零方向取整
-                        else                    %delete swarm
-                            if (N_SWARMS>MIN_SWARMS)
-                                SWARMS(i)=0;
-                                N_SWARMS=N_SWARMS-1;
-                                SC(i)=0;
-                                N(i)=0;
-                                %                                         fprintf('\ndelete swarm %d',i);
+                                if b==1      % 当这个最大值在第一行时（假设是最小值问题）
+                                    xaux{i}=xaux{i}(2:N(i),:);
+                                    xBestaux{i}=xBestaux{i}(2:N(i),:);
+                                    vaux{i}=vaux{i}(2:N(i),:);
+                                    vbef1aux{i}=vbef1aux{i}(2:N(i),:);
+                                    vbef2aux{i}=vbef2aux{i}(2:N(i),:);
+                                    vbef3aux{i}=vbef3aux{i}(2:N(i),:);
+                                end
+                                if b==N(i)   % 当这个最大值在最后一行时
+                                    xaux{i}=xaux{i}(1:b-1,:);
+                                    xBestaux{i}=xBestaux{i}(1:b-1,:);
+                                    vaux{i}=vaux{i}(1:b-1,:);
+                                    vbef1aux{i}=vbef1aux{i}(1:b-1,:);
+                                    vbef2aux{i}=vbef2aux{i}(1:b-1,:);
+                                    vbef3aux{i}=vbef3aux{i}(1:b-1,:);
+                                end
+                                if (b>1 && b<N(i))
+                                    xaux{i}=vertcat(xaux{i}(1:(b-1),:),xaux{i}((b+1):N(i),:));    % vercat表示垂直连接数组
+                                    xBestaux{i}=vertcat(xBestaux{i}(1:(b-1),:),xBestaux{i}((b+1):N(i),:));
+                                    vaux{i}=vertcat(vaux{i}(1:(b-1),:),vaux{i}((b+1):N(i),:));
+                                    vbef1aux{i}=vertcat(vbef1aux{i}(1:(b-1),:),vbef1aux{i}((b+1):N(i),:));
+                                    vbef2aux{i}=vertcat(vbef2aux{i}(1:(b-1),:),vbef2aux{i}((b+1):N(i),:));
+                                    vbef3aux{i}=vertcat(vbef3aux{i}(1:(b-1),:),vbef3aux{i}((b+1):N(i),:));
+                                end
+                                N(i)=N(i)-1;
+                                Nkill(i)=Nkill(i)+1;
+                                SC(i)=fix(SCmax*(1-1/(Nkill(i)+1)));     % fix函数表示向零方向取整
+                            else                    %delete swarm
+                                if (N_SWARMS>MIN_SWARMS)
+                                    SWARMS(i)=0;
+                                    N_SWARMS=N_SWARMS-1;
+                                    SC(i)=0;
+                                    N(i)=0;
+                                    %                                         fprintf('\ndelete swarm %d',i);
+                                end
                             end
                         end
-                    end
+%                     end
                 else
                     if (Nkill(i)>0)           % Nkill初始值为0
                         Nkill(i)=Nkill(i)-1;
@@ -228,9 +214,6 @@ while (nger<=N_GER)
                         vbef1aux{i}(N(i),1:N_PAR)=zeros(1,N_PAR);
                         vbef2aux{i}(N(i),1:N_PAR)=zeros(1,N_PAR);
                         vbef3aux{i}(N(i),1:N_PAR)=zeros(1,N_PAR);
-%                         fitaux{i}(N(i))=0;   % 初始化新加粒子的适应度值
-%                         [pUt2]=Lisimlation1(xaux{i}(N(i),1),xaux{i}(N(i),2),xaux{i}(N(i),3),xaux{i}(N(i),4),xaux{i}(N(i),5),xaux{i}(N(i),6),xaux{i}(N(i),7),xaux{i}(N(i),8),xaux{i}(N(i),9),xaux{i}(N(i),10),xaux{i}(N(i),11),xaux{i}(N(i),12));
-%                         fitaux{i}(N(i))=sum((pUt2-Ut).^2);        % 计算新加粒子的适应度值
                         fitaux{i}(N(i))=feval(fhd,(xaux{i}(N(i),:))',varargin{:})-fbias(varargin{:});
                         fitBestaux{i}(N(i))=fitaux{i}(N(i)); % 储存新加粒子的适应度值
                         [a,b]=min(fitaux{i});     % 找出新加粒子后的种群中的最小适应度值，此时新加粒子的适应度值已经包含在fitaux中
@@ -272,10 +255,6 @@ while (nger<=N_GER)
                         %%%%%%修改BUG所加内容
                         
                         for j=1:N(SWARM_ALIVE(1))   % 计算新加种群的适应度值
-                            
-%                             fitaux{SWARM_ALIVE(1)}(j)=0;
-%                             [pUt3]=Lisimlation1(xaux{SWARM_ALIVE(1)}(j,1),xaux{SWARM_ALIVE(1)}(j,2),xaux{SWARM_ALIVE(1)}(j,3),xaux{SWARM_ALIVE(1)}(j,4),xaux{SWARM_ALIVE(1)}(j,5),xaux{SWARM_ALIVE(1)}(j,6),xaux{SWARM_ALIVE(1)}(j,7),xaux{SWARM_ALIVE(1)}(j,8),xaux{SWARM_ALIVE(1)}(j,9),xaux{SWARM_ALIVE(1)}(j,10),xaux{SWARM_ALIVE(1)}(j,11),xaux{SWARM_ALIVE(1)}(j,12));
-%                             fitaux{SWARM_ALIVE(1)}(j)=sum((pUt3-Ut).^2);
                             fitaux{SWARM_ALIVE(1)}(j)=feval(fhd,(xaux{SWARM_ALIVE(1)}(j,:))',varargin{:})-fbias(varargin{:});
                             fitBestaux{SWARM_ALIVE(1)}(j)=fitaux{SWARM_ALIVE(1)}(j);   % 储存新加种群的最优适应度值
                         end
